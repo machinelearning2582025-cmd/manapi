@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 // 1️⃣ Signup - Add New User
 router.post('/signup', async (req, res) => {
   try {
-    const { email, name, password } = req.body;
+    const { email, name, password, goals, mainGoal, commitments } = req.body;
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
@@ -21,10 +21,10 @@ router.post('/signup', async (req, res) => {
       email,
       name,
       password: hashedPassword,
-      isVerified: true, // default
-      goals: [],
-      mainGoal: "",
-      commitments: { whyNeverQuit: "", sacrificeLevel: "", extraDetails: "" },
+      goals: goals || [],
+      mainGoal: mainGoal || "",
+      commitments: commitments || { whyNeverQuit: "", sacrificeLevel: "", extraDetails: "" },
+      isVerified: true,
       currentPlan: {},
       progressHistory: []
     });
@@ -36,8 +36,32 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// 2️⃣ Update User - Pura Data Update Karo
+router.put('/update/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updateData = req.body;
 
-// 2️⃣ Login - Fetch user by email & password
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ 
+      message: 'User updated successfully', 
+      user: updatedUser 
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating user', error: err.message });
+  }
+});
+
+// 3️⃣ Login - Fetch user by email & password
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -54,8 +78,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
-// 3️⃣ Check Email Exists
+// 4️⃣ Check Email Exists
 router.post('/check-email', async (req, res) => {
   try {
     const { email } = req.body;
